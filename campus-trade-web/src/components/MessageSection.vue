@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '../store/user'
 import { getList as getMessages, send, remove } from '../api/message'
@@ -172,6 +172,8 @@ function formatRelativeTime(dateStr) {
 
 // 暴露给父组件调用
 defineExpose({ fetchMessages })
+
+onMounted(() => fetchMessages())
 </script>
 
 <style scoped>
