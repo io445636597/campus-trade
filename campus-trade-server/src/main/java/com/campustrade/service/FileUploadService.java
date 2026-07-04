@@ -39,8 +39,9 @@ public class FileUploadService {
             log.info("Image uploaded to OSS: {}", url);
             return url;
         } catch (Exception e) {
-            log.error("OSS upload failed", e);
-            throw new BusinessException(500, "图片上传失败");
+            log.error("OSS upload failed: {} | endpoint={} bucket={}",
+                    e.getMessage(), config.getEndpoint(), config.getBucket(), e);
+            throw new BusinessException(500, "图片上传失败: " + e.getMessage());
         }
     }
 }
