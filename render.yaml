@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: campus-trade
+    env: docker
+    rootDir: campus-trade-server
+    plan: free
