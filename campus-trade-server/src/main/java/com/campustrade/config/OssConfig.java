@@ -22,16 +22,17 @@ public class OssConfig {
 
     @PostConstruct
     public void init() {
-        log.info("OSS config loaded: endpoint={}, bucket={}, accessKey={}***",
-                endpoint, bucket, accessKey != null ? accessKey.substring(0, Math.min(4, accessKey.length())) : "null");
+        log.info("OSS config: endpoint={}, bucket={}", endpoint, bucket);
     }
 
     @Bean
     public MinioClient minioClient() {
+        // OSS requires virtual-hosted style: https://bucket.oss-cn-hangzhou.aliyuncs.com
+        String vhostEndpoint = endpoint.replace("https://", "https://" + bucket + ".");
+        log.info("OSS MinioClient endpoint: {}", vhostEndpoint);
         return MinioClient.builder()
-                .endpoint(endpoint)
+                .endpoint(vhostEndpoint)
                 .credentials(accessKey, secretKey)
-                .region("oss-cn-hangzhou")
                 .build();
     }
 }

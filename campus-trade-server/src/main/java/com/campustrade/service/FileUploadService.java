@@ -33,9 +33,8 @@ public class FileUploadService {
                             .contentType(file.getContentType())
                             .build()
             );
-            // OSS virtual-hosted URL: https://bucket.endpoint/filename
-            String endpoint = config.getEndpoint();
-            String url = endpoint.replace("https://", "https://" + config.getBucket() + ".") + "/" + filename;
+            // URL: https://bucket.oss-cn-hangzhou.aliyuncs.com/filename
+            String url = config.getEndpoint().replace("https://", "https://" + config.getBucket() + ".") + "/" + filename;
             log.info("Image uploaded to OSS: {}", url);
             return url;
         } catch (Exception e) {
