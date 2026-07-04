@@ -33,6 +33,7 @@ public class OssConfig {
         return MinioClient.builder()
                 .endpoint(vhostEndpoint)
                 .credentials(accessKey, secretKey)
+                .region("oss-cn-hangzhou")
                 .build();
     }
 }
