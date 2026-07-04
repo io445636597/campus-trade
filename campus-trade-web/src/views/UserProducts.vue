@@ -115,7 +115,7 @@ async function fetchProducts() {
   productsLoading.value = true
   try {
     const res = await getUserProducts(userId.value)
-    products.value = res.data || []
+    products.value = res.data?.records || res.data || []
   } catch {
     products.value = []
   } finally {
