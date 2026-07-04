@@ -27,6 +27,10 @@ export function remove(id) {
   return request.delete(`/api/product/${id}`)
 }
 
+export function getHot() {
+  return request.get('/api/product/hot')
+}
+
 export function search(keyword, page, size) {
   return request.get('/api/product/search', { params: { keyword, page, size } })
 }

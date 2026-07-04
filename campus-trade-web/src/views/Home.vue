@@ -6,6 +6,27 @@
       <SearchBar v-model="keyword" @search="handleSearch" :loading="loading" />
     </div>
 
+    <!-- 热门商品 -->
+    <div v-if="hotProducts.length > 0 && !keyword" class="hot-section">
+      <div class="section-title">
+        <span class="title-text">热门排行</span>
+        <span class="title-badge">TOP {{ hotProducts.length }}</span>
+      </div>
+      <el-row :gutter="16">
+        <el-col
+          v-for="(product, index) in hotProducts"
+          :key="'hot-' + product.id"
+          :xs="12"
+          :sm="8"
+          :md="6"
+          :lg="6"
+          style="margin-bottom: 16px"
+        >
+          <ProductCard :product="product" />
+        </el-col>
+      </el-row>
+    </div>
+
     <CategoryFilter
       v-model:category="category"
       v-model:condition="condition"
@@ -68,11 +89,12 @@ import SearchBar from '../components/SearchBar.vue'
 import CategoryFilter from '../components/CategoryFilter.vue'
 import ProductCard from '../components/ProductCard.vue'
 import Pagination from '../components/Pagination.vue'
-import { getList } from '../api/product'
+import { getList, getHot } from '../api/product'
 
 const route = useRoute()
 const router = useRouter()
 
+const hotProducts = ref([])
 const products = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -142,7 +164,17 @@ function updateQuery() {
   router.replace({ query })
 }
 
+async function fetchHot() {
+  try {
+    const res = await getHot()
+    hotProducts.value = res.data || []
+  } catch {
+    hotProducts.value = []
+  }
+}
+
 onMounted(() => {
+  fetchHot()
   fetchProducts()
 })
 </script>
@@ -177,6 +209,38 @@ onMounted(() => {
 .hero-section :deep(.search-bar) {
   max-width: 560px;
   margin: 0 auto;
+}
+
+.hot-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 20px 4px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f56c6c;
+}
+
+.title-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.title-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #f56c6c, #e6a23c);
+  padding: 2px 10px;
+  border-radius: 10px;
 }
 
 .hero-section :deep(.search-input .el-input-group__append) {
