@@ -21,7 +21,7 @@
     <div class="product-info">
       <h3 class="product-title" :title="product.title">{{ product.title }}</h3>
       <div class="product-meta">
-        <span class="product-price">￥{{ product.price }}</span>
+        <span class="product-price">￥{{ (product.price != null ? Number(product.price) : 0).toFixed(2) }}</span>
         <span class="product-category">{{ product.category }}</span>
       </div>
       <div class="product-footer">

@@ -34,7 +34,7 @@
           <h1 class="product-title">{{ product.title }}</h1>
 
           <div class="price-row">
-            <span class="product-price">￥{{ Number(product.price).toFixed(2) }}</span>
+            <span class="product-price">￥{{ (product.price != null ? Number(product.price) : 0).toFixed(2) }}</span>
           </div>
 
           <div class="tags-row">

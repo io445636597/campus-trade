@@ -69,7 +69,7 @@
                     {{ item.title }}
                   </router-link>
                   <div class="product-meta">
-                    <span class="product-price">￥{{ Number(item.price).toFixed(2) }}</span>
+                    <span class="product-price">￥{{ (item.price != null ? Number(item.price) : 0).toFixed(2) }}</span>
                     <el-tag :type="statusTagType(item.status)" size="small">
                       {{ statusLabel(item.status) }}
                     </el-tag>
@@ -148,7 +148,7 @@
               :lg="6"
               style="margin-bottom: 16px"
             >
-              <ProductCard :product="bm.product || bm" />
+              <ProductCard :product="bm" />
             </el-col>
           </el-row>
         </el-card>
@@ -263,7 +263,7 @@ async function fetchMyProducts() {
   myProductsLoading.value = true
   try {
     const res = await getUserProducts(userStore.user.id)
-    myProducts.value = res.data || []
+    myProducts.value = res.data?.records || res.data || []
   } catch {
     myProducts.value = []
   } finally {
@@ -348,7 +348,7 @@ async function fetchBookmarks() {
   bookmarksLoading.value = true
   try {
     const res = await getMyBookmarks()
-    bookmarks.value = res.data || []
+    bookmarks.value = res.data?.records || res.data || []
   } catch {
     bookmarks.value = []
   } finally {
