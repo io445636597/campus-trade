@@ -1,9 +1,13 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+const BASE_URL = import.meta.env.PROD
+  ? 'https://campus-trade-89gs.onrender.com'
+  : ''
+
 const request = axios.create({
-  baseURL: '',
-  timeout: 15000
+  baseURL: BASE_URL,
+  timeout: 30000
 })
 
 // 请求拦截器
