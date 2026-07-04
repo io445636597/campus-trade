@@ -1,3 +1,7 @@
+# 应用基础URL（生产环境传入后端公网地址，本地留空走相对路径）
+app:
+  base-url: ${APP_BASE_URL:}
+
 # MinIO 对象存储配置
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
