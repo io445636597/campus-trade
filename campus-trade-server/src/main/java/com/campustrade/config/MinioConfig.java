@@ -15,12 +15,16 @@ public class MinioConfig {
     private String accessKey;
     private String secretKey;
     private String bucket;
+    private String region;
 
     @Bean
     public MinioClient minioClient() {
-        return MinioClient.builder()
+        MinioClient.Builder builder = MinioClient.builder()
                 .endpoint(endpoint)
-                .credentials(accessKey, secretKey)
-                .build();
+                .credentials(accessKey, secretKey);
+        if (region != null && !region.isEmpty()) {
+            builder.region(region);
+        }
+        return builder.build();
     }
 }

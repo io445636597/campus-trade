@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,22 +38,31 @@ public class FileUploadService {
     }
 
     public String uploadImage(MultipartFile file) {
-        // Try MinIO first, fall back to local storage
         try {
             return uploadToMinIO(file);
-        } catch (Exception e) {
-            log.warn("MinIO upload failed, falling back to local: {}", e.getMessage());
+        } catch (Exception minioEx) {
+            log.warn("MinIO/OSS failed ({}), falling back to local", minioEx.getMessage());
             return uploadToLocal(file);
         }
     }
 
     private String uploadToMinIO(MultipartFile file) throws Exception {
-        boolean found = minioClient.bucketExists(
-                BucketExistsArgs.builder().bucket(bucket).build()
-        );
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+        // Skip auto-create for OSS (bucket names must be globally unique)
+        if (isLikelyOSS()) {
+            log.info("OSS mode detected, bucket must already exist: {}", bucket);
+        } else {
+            try {
+                boolean found = minioClient.bucketExists(
+                        BucketExistsArgs.builder().bucket(bucket).build()
+                );
+                if (!found) {
+                    minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+                }
+            } catch (Exception e) {
+                log.warn("Bucket check failed, continuing anyway: {}", e.getMessage());
+            }
         }
+
         String filename = UUID.randomUUID() + "-" + file.getOriginalFilename();
         minioClient.putObject(
                 PutObjectArgs.builder()
@@ -64,7 +72,17 @@ public class FileUploadService {
                         .contentType(file.getContentType())
                         .build()
         );
-        return endpoint + "/" + bucket + "/" + filename;
+
+        // OSS virtual-hosted URL: https://bucket.endpoint/filename
+        // MinIO path-style URL: endpoint/bucket/filename
+        String url;
+        if (isLikelyOSS()) {
+            url = endpoint.replace("https://", "https://" + bucket + ".") + "/" + filename;
+        } else {
+            url = endpoint + "/" + bucket + "/" + filename;
+        }
+        log.info("Image uploaded: {}", url);
+        return url;
     }
 
     private String uploadToLocal(MultipartFile file) {
@@ -80,8 +98,12 @@ public class FileUploadService {
             String relativeUrl = "/uploads/" + filename;
             return baseUrl.isEmpty() ? relativeUrl : baseUrl + relativeUrl;
         } catch (Exception e) {
-            log.error("Local upload failed: {}", e.getMessage());
+            log.error("Local upload failed", e);
             throw new BusinessException(500, "图片上传失败");
         }
+    }
+
+    private boolean isLikelyOSS() {
+        return endpoint.contains("aliyuncs.com");
     }
 }
