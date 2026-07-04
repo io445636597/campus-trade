@@ -2,6 +2,8 @@ package com.campustrade.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campustrade.common.BusinessException;
+import com.campustrade.config.RabbitMQConfig;
+import com.campustrade.dto.NotificationEvent;
 import com.campustrade.entity.Message;
 import com.campustrade.entity.Product;
 import com.campustrade.entity.User;
@@ -10,25 +12,32 @@ import com.campustrade.mapper.ProductMapper;
 import com.campustrade.mapper.UserMapper;
 import com.campustrade.security.LoginUser;
 import com.campustrade.service.MessageService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class MessageServiceImpl implements MessageService {
 
     private final MessageMapper messageMapper;
     private final UserMapper userMapper;
     private final ProductMapper productMapper;
+    private final RabbitTemplate rabbitTemplate;
 
     public MessageServiceImpl(MessageMapper messageMapper,
                                UserMapper userMapper,
-                               ProductMapper productMapper) {
+                               ProductMapper productMapper,
+                               RabbitTemplate rabbitTemplate) {
         this.messageMapper = messageMapper;
         this.userMapper = userMapper;
         this.productMapper = productMapper;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
@@ -65,6 +74,19 @@ public class MessageServiceImpl implements MessageService {
         User author = userMapper.selectById(userId);
         if (author != null) {
             message.setUser(author);
+        }
+
+        try {
+            NotificationEvent event = new NotificationEvent();
+            event.setType("MESSAGE");
+            event.setFromUserId(userId);
+            event.setToUserId(product.getUserId());
+            event.setProductId(productId);
+            event.setContent(content);
+            event.setTimestamp(LocalDateTime.now());
+            rabbitTemplate.convertAndSend(RabbitMQConfig.TOPIC_EXCHANGE, RabbitMQConfig.MESSAGE_KEY, event);
+        } catch (Exception e) {
+            log.warn("Failed to send message notification: {}", e.getMessage());
         }
 
         return message;

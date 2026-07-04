@@ -6,6 +6,7 @@ import com.campustrade.dto.LoginResponse;
 import com.campustrade.dto.RegisterRequest;
 import com.campustrade.entity.User;
 import com.campustrade.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,8 +27,10 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public Result<LoginResponse> login(@RequestBody LoginRequest request) {
-        LoginResponse response = userService.login(request.getUsername(), request.getPassword());
+    public Result<LoginResponse> login(@RequestBody LoginRequest request,
+                                       HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+        LoginResponse response = userService.login(request.getUsername(), request.getPassword(), ip);
         return Result.success(response);
     }
 

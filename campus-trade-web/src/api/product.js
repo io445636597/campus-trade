@@ -1,5 +1,8 @@
 import request from './request'
 
+// getList supports keyword param for search.
+// The backend transparently uses Elasticsearch (with MySQL fallback) when a keyword is provided.
+// The dedicated /api/product/search endpoint is also available via the search() function below.
 export function getList(params) {
   return request.get('/api/product', { params })
 }
@@ -26,4 +29,12 @@ export function remove(id) {
 
 export function search(keyword, page, size) {
   return request.get('/api/product/search', { params: { keyword, page, size } })
+}
+
+export function uploadImage(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/api/product/upload/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
 }

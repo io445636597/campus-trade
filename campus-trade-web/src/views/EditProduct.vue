@@ -78,9 +78,25 @@
           />
         </el-form-item>
 
-        <el-form-item label="图片地址" prop="imageUrl">
-          <el-input v-model="form.imageUrl" placeholder="可选，输入图片链接" />
-          <div class="form-tip">支持任意可访问的图片URL，留空则不展示图片</div>
+        <el-form-item label="图片" prop="imageUrl">
+          <el-upload
+            class="image-uploader"
+            :action="uploadUrl"
+            :headers="uploadHeaders"
+            :show-file-list="false"
+            :on-success="handleUploadSuccess"
+            :on-error="handleUploadError"
+            :before-upload="beforeUpload"
+            accept="image/*"
+            drag
+          >
+            <img v-if="form.imageUrl" :src="form.imageUrl" class="uploaded-image" />
+            <div v-else>
+              <el-icon :size="48"><UploadFilled /></el-icon>
+              <div class="upload-text">点击或拖拽上传图片</div>
+              <div class="upload-tip">支持 JPG/PNG，单张不超过 5MB</div>
+            </div>
+          </el-upload>
         </el-form-item>
 
         <el-form-item>
@@ -100,9 +116,10 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { UploadFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '../store/user'
 import { getDetail, update } from '../api/product'
 import { CATEGORIES, CONDITIONS } from '../utils/constants'
@@ -117,6 +134,14 @@ const submitting = ref(false)
 const accessError = ref('')
 
 const productId = Number(route.params.id)
+
+const uploadUrl = computed(() => (import.meta.env.PROD
+  ? 'https://campus-trade-89gs.onrender.com'
+  : '') + '/api/product/upload/image')
+
+const uploadHeaders = computed(() => ({
+  Authorization: 'Bearer ' + (userStore.token || localStorage.getItem('token') || '')
+}))
 
 const form = reactive({
   title: '',
@@ -205,6 +230,33 @@ async function handleSubmit() {
 onMounted(() => {
   fetchProduct()
 })
+
+function handleUploadSuccess(response) {
+  if (response.code === 200 && response.data?.url) {
+    form.imageUrl = response.data.url
+    ElMessage.success('上传成功')
+  } else {
+    ElMessage.error(response.message || '上传失败')
+  }
+}
+
+function handleUploadError() {
+  ElMessage.error('上传失败，请重试')
+}
+
+function beforeUpload(file) {
+  const isImage = file.type.startsWith('image/')
+  const isLt5M = file.size / 1024 / 1024 < 5
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return false
+  }
+  return true
+}
 </script>
 
 <style scoped>
@@ -254,6 +306,38 @@ onMounted(() => {
   color: #c0c4cc;
   margin-top: 4px;
   line-height: 1.5;
+}
+
+.image-uploader {
+  width: 100%;
+}
+
+.image-uploader :deep(.el-upload-dragger) {
+  width: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.uploaded-image {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.upload-text {
+  font-size: 14px;
+  color: #606266;
+  margin-top: 8px;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 4px;
 }
 
 @media (max-width: 768px) {

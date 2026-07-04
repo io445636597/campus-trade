@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campustrade.common.BusinessException;
 import com.campustrade.common.PageResult;
+import com.campustrade.config.RabbitMQConfig;
+import com.campustrade.dto.NotificationEvent;
 import com.campustrade.entity.Bookmark;
 import com.campustrade.entity.Product;
 import com.campustrade.entity.User;
@@ -13,25 +15,32 @@ import com.campustrade.mapper.ProductMapper;
 import com.campustrade.mapper.UserMapper;
 import com.campustrade.security.LoginUser;
 import com.campustrade.service.BookmarkService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class BookmarkServiceImpl implements BookmarkService {
 
     private final BookmarkMapper bookmarkMapper;
     private final ProductMapper productMapper;
     private final UserMapper userMapper;
+    private final RabbitTemplate rabbitTemplate;
 
     public BookmarkServiceImpl(BookmarkMapper bookmarkMapper,
                                 ProductMapper productMapper,
-                                UserMapper userMapper) {
+                                UserMapper userMapper,
+                                RabbitTemplate rabbitTemplate) {
         this.bookmarkMapper = bookmarkMapper;
         this.productMapper = productMapper;
         this.userMapper = userMapper;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
@@ -57,6 +66,19 @@ public class BookmarkServiceImpl implements BookmarkService {
             bookmark.setUserId(userId);
             bookmark.setProductId(productId);
             bookmarkMapper.insert(bookmark);
+
+            try {
+                NotificationEvent event = new NotificationEvent();
+                event.setType("BOOKMARK");
+                event.setFromUserId(userId);
+                event.setToUserId(product.getUserId());
+                event.setProductId(productId);
+                event.setTimestamp(LocalDateTime.now());
+                rabbitTemplate.convertAndSend(RabbitMQConfig.TOPIC_EXCHANGE, RabbitMQConfig.BOOKMARK_KEY, event);
+            } catch (Exception e) {
+                log.warn("Failed to send bookmark notification: {}", e.getMessage());
+            }
+
             return true;
         }
     }

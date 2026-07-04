@@ -14,9 +14,9 @@ public interface UserService {
     User register(RegisterRequest request);
 
     /**
-     * Login with username and password
+     * Login with username, password and client IP
      */
-    LoginResponse login(String username, String password);
+    LoginResponse login(String username, String password, String ip);
 
     /**
      * Get current login user info

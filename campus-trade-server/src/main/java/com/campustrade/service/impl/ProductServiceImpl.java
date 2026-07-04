@@ -15,7 +15,10 @@ import com.campustrade.mapper.MessageMapper;
 import com.campustrade.mapper.ProductMapper;
 import com.campustrade.mapper.UserMapper;
 import com.campustrade.security.LoginUser;
+import com.campustrade.service.ProductCacheService;
+import com.campustrade.service.ProductSearchService;
 import com.campustrade.service.ProductService;
+import com.campustrade.service.ViewCountService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,15 +32,24 @@ public class ProductServiceImpl implements ProductService {
     private final UserMapper userMapper;
     private final BookmarkMapper bookmarkMapper;
     private final MessageMapper messageMapper;
+    private final ProductCacheService cacheService;
+    private final ViewCountService viewCountService;
+    private final ProductSearchService searchService;
 
     public ProductServiceImpl(ProductMapper productMapper,
                                UserMapper userMapper,
                                BookmarkMapper bookmarkMapper,
-                               MessageMapper messageMapper) {
+                               MessageMapper messageMapper,
+                               ProductCacheService cacheService,
+                               ViewCountService viewCountService,
+                               ProductSearchService searchService) {
         this.productMapper = productMapper;
         this.userMapper = userMapper;
         this.bookmarkMapper = bookmarkMapper;
         this.messageMapper = messageMapper;
+        this.cacheService = cacheService;
+        this.viewCountService = viewCountService;
+        this.searchService = searchService;
     }
 
     @Override
@@ -90,14 +102,27 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Product getProductById(Long id) {
-        Product product = productMapper.selectById(id);
-        if (product == null) {
-            throw new BusinessException(404, "商品不存在");
+        // Try cache first
+        Product product = cacheService.getProductDetail(id);
+        boolean fromCache = (product != null);
+
+        if (!fromCache) {
+            // Cache miss, query DB
+            product = productMapper.selectById(id);
+            if (product == null) {
+                throw new BusinessException(404, "商品不存在");
+            }
+            // Cache the raw product (before filling transient fields)
+            cacheService.cacheProductDetail(product);
         }
 
-        // Increment view count
-        product.setViewCount((product.getViewCount() == null ? 0 : product.getViewCount()) + 1);
-        productMapper.updateById(product);
+        // Increment view count in Redis buffer (async, non-blocking)
+        viewCountService.incrementView(id);
+        cacheService.incrementViewRank(id);
+
+        // Merge DB view_count with Redis buffer for accurate display
+        int redisViews = viewCountService.getViewCount(id);
+        product.setViewCount((product.getViewCount() == null ? 0 : product.getViewCount()) + redisViews);
 
         // Fill author
         User author = userMapper.selectById(product.getUserId());
@@ -139,6 +164,10 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus("AVAILABLE");
         product.setViewCount(0);
         productMapper.insert(product);
+        // Cache the new product
+        cacheService.cacheProductDetail(product);
+        // Sync to Elasticsearch
+        searchService.indexProduct(product);
         return product;
     }
 
@@ -173,6 +202,10 @@ public class ProductServiceImpl implements ProductService {
         }
 
         productMapper.updateById(existing);
+        // Evict cache after update
+        cacheService.evictProduct(id);
+        // Sync to Elasticsearch
+        searchService.indexProduct(existing);
         return existing;
     }
 
@@ -188,6 +221,8 @@ public class ProductServiceImpl implements ProductService {
         }
         product.setStatus(status);
         productMapper.updateById(product);
+        // Sync status change to Elasticsearch
+        searchService.indexProduct(product);
         return product;
     }
 
@@ -202,6 +237,10 @@ public class ProductServiceImpl implements ProductService {
             throw new BusinessException(403, "无权删除他人商品");
         }
         productMapper.deleteById(id);
+        // Evict cache after delete
+        cacheService.evictProduct(id);
+        // Remove from Elasticsearch
+        searchService.deleteIndex(id);
     }
 
     @Override

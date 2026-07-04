@@ -13,6 +13,7 @@ import com.campustrade.mapper.ProductMapper;
 import com.campustrade.mapper.UserMapper;
 import com.campustrade.security.JwtUtils;
 import com.campustrade.security.LoginUser;
+import com.campustrade.service.RateLimitService;
 import com.campustrade.service.UserService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,15 +29,18 @@ public class UserServiceImpl implements UserService {
     private final ProductMapper productMapper;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+    private final RateLimitService rateLimitService;
 
     public UserServiceImpl(UserMapper userMapper,
                            ProductMapper productMapper,
                            BCryptPasswordEncoder passwordEncoder,
-                           JwtUtils jwtUtils) {
+                           JwtUtils jwtUtils,
+                           RateLimitService rateLimitService) {
         this.userMapper = userMapper;
         this.productMapper = productMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
+        this.rateLimitService = rateLimitService;
     }
 
     @Override
@@ -67,7 +71,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public LoginResponse login(String username, String password) {
+    public LoginResponse login(String username, String password, String ip) {
+        // Rate limit check before DB query
+        rateLimitService.checkLoginLimit(ip);
+
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username));
         if (user == null) {

@@ -1,5 +1,22 @@
+# MinIO 对象存储配置
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket: ${MINIO_BUCKET:campustrade}
+
 # H2 开发环境配置（无需 MySQL）
+# Redis 开发环境（本地 standalone）
 spring:
+  elasticsearch:
+    uris: ${ES_HOST:http://localhost:9200}
+    connection-timeout: 3s
+    socket-timeout: 5s
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:campus_trade;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
@@ -13,6 +30,17 @@ spring:
     init:
       mode: always
       schema-locations: classpath:db/schema-h2.sql
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
 
 mybatis-plus:
   configuration:
