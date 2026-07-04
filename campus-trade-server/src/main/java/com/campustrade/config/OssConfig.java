@@ -7,24 +7,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "minio")
+@ConfigurationProperties(prefix = "oss")
 @Data
-public class MinioConfig {
+public class OssConfig {
 
     private String endpoint;
     private String accessKey;
     private String secretKey;
     private String bucket;
-    private String region;
 
     @Bean
     public MinioClient minioClient() {
-        MinioClient.Builder builder = MinioClient.builder()
+        return MinioClient.builder()
                 .endpoint(endpoint)
-                .credentials(accessKey, secretKey);
-        if (region != null && !region.isEmpty()) {
-            builder.region(region);
-        }
-        return builder.build();
+                .credentials(accessKey, secretKey)
+                .build();
     }
 }

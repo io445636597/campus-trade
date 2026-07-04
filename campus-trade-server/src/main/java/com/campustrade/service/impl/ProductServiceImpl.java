@@ -16,7 +16,6 @@ import com.campustrade.mapper.ProductMapper;
 import com.campustrade.mapper.UserMapper;
 import com.campustrade.security.LoginUser;
 import com.campustrade.service.ProductCacheService;
-import com.campustrade.service.ProductSearchService;
 import com.campustrade.service.ProductService;
 import com.campustrade.service.ViewCountService;
 import org.springframework.stereotype.Service;
@@ -34,22 +33,18 @@ public class ProductServiceImpl implements ProductService {
     private final MessageMapper messageMapper;
     private final ProductCacheService cacheService;
     private final ViewCountService viewCountService;
-    private final ProductSearchService searchService;
-
     public ProductServiceImpl(ProductMapper productMapper,
                                UserMapper userMapper,
                                BookmarkMapper bookmarkMapper,
                                MessageMapper messageMapper,
                                ProductCacheService cacheService,
-                               ViewCountService viewCountService,
-                               ProductSearchService searchService) {
+                               ViewCountService viewCountService) {
         this.productMapper = productMapper;
         this.userMapper = userMapper;
         this.bookmarkMapper = bookmarkMapper;
         this.messageMapper = messageMapper;
         this.cacheService = cacheService;
         this.viewCountService = viewCountService;
-        this.searchService = searchService;
     }
 
     @Override
@@ -167,7 +162,6 @@ public class ProductServiceImpl implements ProductService {
         // Cache the new product
         cacheService.cacheProductDetail(product);
         // Sync to Elasticsearch
-        searchService.indexProduct(product);
         return product;
     }
 
@@ -205,8 +199,7 @@ public class ProductServiceImpl implements ProductService {
         // Evict cache after update
         cacheService.evictProduct(id);
         // Sync to Elasticsearch
-        searchService.indexProduct(existing);
-        return existing;
+                return existing;
     }
 
     @Override
@@ -222,7 +215,6 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(status);
         productMapper.updateById(product);
         // Sync status change to Elasticsearch
-        searchService.indexProduct(product);
         return product;
     }
 
@@ -240,7 +232,6 @@ public class ProductServiceImpl implements ProductService {
         // Evict cache after delete
         cacheService.evictProduct(id);
         // Remove from Elasticsearch
-        searchService.deleteIndex(id);
     }
 
     @Override

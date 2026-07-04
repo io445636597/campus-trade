@@ -1,22 +1,12 @@
-# 应用基础URL（生产环境传入后端公网地址，本地留空走相对路径）
-app:
-  base-url: ${APP_BASE_URL:}
+# OSS 对象存储
+oss:
+  endpoint: ${OSS_ENDPOINT:http://localhost:9000}
+  access-key: ${OSS_ACCESS_KEY:minioadmin}
+  secret-key: ${OSS_SECRET_KEY:minioadmin}
+  bucket: ${OSS_BUCKET:campustrade}
 
-# MinIO / OSS 对象存储配置
-minio:
-  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
-  bucket: ${MINIO_BUCKET:campustrade}
-  region: ${MINIO_REGION:}
-
-# H2 开发环境配置（无需 MySQL）
-# Redis 开发环境（本地 standalone）
+# H2 文件数据库（持久化）
 spring:
-  elasticsearch:
-    uris: ${ES_HOST:http://localhost:9200}
-    connection-timeout: 3s
-    socket-timeout: 5s
   data:
     redis:
       host: localhost
@@ -35,17 +25,6 @@ spring:
     init:
       mode: always
       schema-locations: classpath:db/schema-h2.sql
-
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASS:guest}
-    listener:
-      simple:
-        retry:
-          enabled: true
-          max-attempts: 3
 
 mybatis-plus:
   configuration:
