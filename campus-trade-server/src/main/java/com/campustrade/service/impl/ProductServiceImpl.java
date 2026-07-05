@@ -97,6 +97,24 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Product getProductById(Long id) {
+        Product product = fetchAndFillProduct(id);
+        // Increment view count — only for actual detail page visits
+        viewCountService.incrementView(id);
+        cacheService.incrementViewRank(id);
+        return product;
+    }
+
+    @Override
+    @Transactional
+    public Product getProductByIdReadOnly(Long id) {
+        // Same as getProductById but WITHOUT view counting side effects
+        return fetchAndFillProduct(id);
+    }
+
+    /**
+     * Shared logic: fetch product (cache first, then DB), fill transient fields.
+     */
+    private Product fetchAndFillProduct(Long id) {
         // Try cache first
         Product product = cacheService.getProductDetail(id);
         boolean fromCache = (product != null);
@@ -110,10 +128,6 @@ public class ProductServiceImpl implements ProductService {
             // Cache the raw product (before filling transient fields)
             cacheService.cacheProductDetail(product);
         }
-
-        // Increment view count in Redis buffer (async, non-blocking)
-        viewCountService.incrementView(id);
-        cacheService.incrementViewRank(id);
 
         // Merge DB view_count with Redis buffer for accurate display
         int redisViews = viewCountService.getViewCount(id);

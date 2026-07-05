@@ -12,9 +12,15 @@ public interface ProductService {
     PageResult<Product> listProducts(ProductQuery query);
 
     /**
-     * Get product detail (with author, bookmark count, message count, isBookmarked)
+     * Get product detail (with author, bookmark count, message count, isBookmarked).
+     * Increments view count and view rank — only for actual product detail visits.
      */
     Product getProductById(Long id);
+
+    /**
+     * Get product detail WITHOUT incrementing view count (for list/rank displays).
+     */
+    Product getProductByIdReadOnly(Long id);
 
     /**
      * Create a new product

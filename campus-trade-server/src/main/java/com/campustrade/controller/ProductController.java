@@ -94,7 +94,7 @@ public class ProductController {
         for (String idStr : hotIds) {
             try {
                 Long id = Long.parseLong(idStr);
-                Product product = productService.getProductById(id);
+                Product product = productService.getProductByIdReadOnly(id);
                 hotProducts.add(product);
             } catch (Exception e) {
                 // Skip invalid/missing products
